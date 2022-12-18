@@ -1,0 +1,72 @@
+#!/bin/sh
+##[Ficha: ]#######################################[Descricao: ]##############################################################
+#                                               #                                                                           #
+# [-] Autor..........: Jean Zonta               # [-] Script que configura banco de dados mysql.                            #
+# [-] Pseudonym......: wiki.anon                #                                                                           #
+# [-] Os destination.: Linux Gnu Slackware      ##[Notas: ]##################################################################
+# [-] Script Name....: config_mysql             #                                                                           #
+# [-] Create day.....: Seg Jan 16 15:40:00 2017 # [-] Script criado para configurar ambiente senha do usuario root mysql.   #
+# [-] Last Update....: Qui Apr 16 23:35:40 2020 #                                                                           #
+# [-] License........: GNU/GPL V3+              #                                                                           #
+# [-] Script Version.: 0.0.2                    #                                                                           #
+#                                               #                                                                           #
+##[e-mail: ]#################################################################################################################
+#                                                                                                                           #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                                                #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@'                    #
+#                                                                                                                           #
+#############################################################################################################################
+MYSQL=${MYSQL:-mysql}
+MYSQLD=${MYSQLD:-/etc/rc.d/rc.mysqld}
+
+if [ "$(whoami)" != "root" ]; then
+ echo -e "\n\t\033[1;35mMake sudo to run $0\033[1;32m!\033[0m\n"
+  else
+
+if [ -z "$(grep "mysqld_status()" ${MYSQLD})" ]; then
+ sed -i "79s/$/\n\n# Status mysqld:\nmysqld_status() {\n\! [ -r \/var\/run\/mysql\/mysql.pid ] \&\& echo \"mysql not running\!\" || echo \"mysql is runing\!\"\n}/g;93s/$/\n'status'\)\n  mysqld_status\n  ;;/g;/usage/s/usage.*/usage \$0 start|stop|status|restart\"/g;" ${MYSQLD}
+  if ! [ -z "$(grep "mysqld_status()" ${MYSQLD})" ]; then
+  echo -e "\033[1;35mFunction \033[1;32m\"\033[1;36mmysqld_status()\033[1;32m\" \033[1;35madded to file\033[1;32m\"\033[1;36m${MYSQLD}\033[1;32m\" \033[1;35msucessfully\033[1;32m!\033[0m\n"
+  fi
+fi
+
+if [ "$(ls -l ${MYSQLD} | cut -f1 -d' ')" != "-rwxr-xr-x" ]; then
+ chmod 755 ${MYSQLD}
+  if [ $? -eq 0 ]; then
+  echo -e "\n\033[1;35mPermissão do arquivo \033[1;32m\"\033[1;36m${MYSQLD}\033[1;32m\" \033[1;35malterada com sucesso\033[1;32m!\033[0m"
+  fi
+fi
+
+echo -e "\033[1;35mCriando banco de dados e usuário mysql\033[1;32m!\033[0m\n"
+ mysql_install_db --user=${MYSQL}&
+
+echo -e "\033[1;35mIniciando MariaDB\033[1;32m!\033[0m\n"
+ mysqld_safe --user=${MYSQL}&
+
+echo -e "\033[1;35mDono de \033[1;36m/var/lib/${MYSQL} \033[1;35mrecursivamente\033[1;32m!\033[0m\n"
+ chown -vR ${MYSQL}.${MYSQL} /var/lib/${MYSQL}
+
+sleep 7
+read -sp "$(echo -ne "\033[1;35mEnter password user \033[1;35m${MYSQL}\033[1;32m:\033[0m ")" MYPASS
+
+sleep 7 # Necessário para não dar erro ao executar o comando abaixo.
+mysql -u root -e "show create user root@localhost;
+                  update global_priv set priv=json_set(priv, '$.plugin', 'mysql_native_password','$.authentication_string', password('${MYPASS}')) where User='root';
+                  update global_priv set priv=json_set(priv, '$.plugin', 'mysql_native_password','$.authentication_string', password('${MYPASS}')) where User='mysql';
+                  delete from global_priv where User='' and Host in ('localhost', '127.0.0.1', '::1', '%');
+                  delete from global_priv where User='root' and Host not in ('localhost', '127.0.0.1', '::1', '%');
+                  delete from global_priv where User='mysql' and Host not in ('localhost', '127.0.0.1', '::1', '%');
+                  grant all on *.* to 'root'@'localhost' identified by '${MYPASS}';
+                  grant all on *.* to 'root'@'%' identified by '${MYPASS}';
+                  grant all on *.* to 'mysql'@'localhost' identified by '${MYPASS}';
+                  grant all on *.* to 'mysql'@'%' identified by '${MYPASS}';
+                  grant all privileges on *.* to 'root'@'localhost';
+                  grant all privileges on *.* to 'root'@'%';
+                  grant all privileges on *.* to 'mysql'@'localhost';
+                  grant all privileges on *.* to 'mysql'@'%';
+                  drop database if exists test;
+                  delete from db where Db='test' or Db='test\\_%';
+                  flush privileges;
+                  select *from global_priv as GlobalPrive;
+                  select *from user as User;" ${MYSQL}
+fi

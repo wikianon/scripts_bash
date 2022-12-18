@@ -1,0 +1,311 @@
+#!/bin/sh
+##[Ficha: ]###############################################################################################
+#                                                                                                        #
+# [-] Autor..........: Jean Zonta                                                                        #
+# [-] Pseudonym......: wiki.anon                                                                         #
+# [-] Os destination.: Slackware family                                                                  #
+# [-] Script Name....: ksl-installoff-lilo                                                               #
+# [-] Create day.....: Qua Jan 10 14:30:00 2018                                                          #
+# [-] Last Update....: Sab Apr 11 01:08:20 2020                                                          #
+# [-] License........: GNU/GPL V3+                                                                       #
+# [-] Script Version.: 0.0.4                                                                             #
+#                                                                                                        #
+##[Default dir packages: ]################################################################################
+#                                                                                                        #
+# [-] kernel/kernel-modules+-[0-9]+(.*).t?z                                                              #
+# [-] kernel/kernel-generic+-[0-9]+(.*).t?z                                                              #
+# [-] kernel/kernel-huge+-[0-9]+(.*).t?z                                                                 #
+#                                                                                                        #
+##[Install script in default dir package: ]###############################################################
+#                                                                                                        #
+# [-] kernel/ksl-installoff-lilo                                                                         #
+# [-] wiki.anon[../Configs]# bash kernel/ksl-installoff-lilo                                             #
+#                                                                                                        #
+##[e-mail: ]##############################################################################################
+#                                                                                                        #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                             #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@' #
+#                                                                                                        #
+##########################################################################################################
+LILO=${LILO:-/etc/lilo.conf}
+
+SLILO=${SLILO:-$(which lilo)}
+
+#Pega o numero da linha  # End LILO global section
+LINE=${LINE:-$(cat -n ${LILO} | grep "# End LILO global section" | awk '{print $1}')}
+#############################################################################
+##############Section Verify Root Systems (U|Li)n(i|u)x begins###############
+if [ $(id -u) -ne 0 ]; then
+ echo -e "\n\033[1;31mYou must be root\033[1;32m!\033[0m\n"
+  else
+#############################################################################
+#########################Begin get disk and partition########################
+DEVDISK=${DEVDISK:-$(mount | grep "^/dev/.*[[:blank:]]/[[:blank:]]" | awk  '{print $1}')}
+
+SYSARQ=${SYSARQ:-$(file -s ${DEVDISK} | awk '{print $5}')}
+##########################End get disk and partition#########################
+#############################################################################
+#######################Begin mkinitrd command generator######################
+MKINITRD=${MKINITRD:-$(which mkinitrd)}
+
+MKINITRDCOMMAND=${MKINITRDCOMMAND:-/usr/share/mkinitrd/mkinitrd_command_generator.sh}
+
+MKINITRDSTRINGS=${MKINITRDSTRINGS:-$(${MKINITRDCOMMAND} | grep ^mkinitrd | cut -f10 -d' ')}
+#mkinitrd -c -k $(uname -r) -f ext{1,2,3,4}  -r /dev/sda{1,2,3,4} -m ${MKINITRDSTRINGS} -u -o /boot/initrd.gz
+########################End mkinitrd command generator#######################
+#############################################################################
+############################Begin get ARCH###################################
+case "$(uname -m)" in
+  x86_64|e*) ARCH=".x64" ;;  #Downloads para arquitetura x86_64 e processadores x64 / EM64T:
+   i?86|x86) ARCH=".i586" ;; #Downloads para arquitetura x86, i386, i486, i586 e i686
+          *) ARCH="" ;;
+esac
+#############################End get ARCH####################################
+#############################################################################
+##########################Begin install MODULES_PKG##########################
+LIBMODULES=${LIBMODULES:-/lib/modules}
+
+MODULES_PKG=${MODULES_PKG:-$(ls ${PWD}/kernel | egrep -o 'kernel-modules+-[0-9]+(.*).t?z$')}
+
+INSTVERSION=${INSTVERSION:-$(echo ${MODULES_PKG} 2> /dev/null | cut -f3 -d -)}
+
+MODULES_EXISTS=${MODULES_EXISTS:-$(ls -1 /lib/modules/ | grep ${INSTVERSION})}
+
+if [ -z "${MODULES_EXISTS}" -a -f "${PWD}/kernel/${MODULES_PKG}" ]; then
+ installpkg ${PWD}/kernel/${MODULES_PKG}
+  fi
+###########################End install MODULES_PKG###########################
+#############################################################################
+#################Begin input install kernel generic or huge##################
+echo -ne "\n\033[1;35mDo you want to add kernel \033[1;32mg\033[1;35m(\033[1;32meneric\033[1;35m) or at the \033[1;32mh\033[1;35m(\033[1;32muge\033[1;35m)\033[1;32m?\033[0m "
+
+read installoff
+
+installoff=$(echo ${installoff} | tr A-Z a-z) #lowercase
+##################End input install kernel generic or huge###################
+#############################################################################
+#################Begin case install GENERIC_PKG and HUGE_PKG#################
+case "${installoff}" in
+
+'g') # Begin install option GENERIC_PKG
+#############################################################################
+##################Begin exists kernel generic in lilo.conf###################
+#############################################################################
+##########################Begin install GENERIC_PKG##########################
+GENERIC_PKG=${GENERIC_PKG:-$(ls ${PWD}/kernel | egrep -o 'kernel-generic+-[0-9]+(.*).t?z$')}
+GENERIC_EXISTS=${GENERIC_EXISTS:-$(ls -1 /var/log/packages/kernel-generic-${INSTVERSION}* 2> /dev/null)}
+
+if [ -z "${GENERIC_EXISTS}" -a -f "${PWD}/kernel/${GENERIC_PKG}" ]; then
+ installpkg ${PWD}/kernel/${GENERIC_PKG}
+  fi
+###########################End install GENERIC_PKG###########################
+#############################################################################
+##########################Begin vars kernel generic##########################
+GENERIC_LABEL=${GENERIC_LABEL:-$(grep "GNRC-${INSTVERSION}" ${LILO})}
+
+VM_GENERIC_LNK=${VM_GENERIC_LNK:-/boot/vmlinuz_generic-${INSTVERSION}}
+VM_GENERIC=${VM_GENERIC:-$(ls -1 /boot/vmlinuz-generic-${INSTVERSION} 2> /dev/null)}
+if ! [ -f "${VM_GENERIC}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${VM_GENERIC}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${VM_GENERIC}\033[1;31m!\033[0m"
+    ln -vs ${VM_GENERIC} ${VM_GENERIC_LNK}
+     rm -v ${VM_GENERIC%%-*} ${VM_GENERIC%-*}
+      fi
+
+MAP_GENERIC_LNK=${MAP_GENERIC_LNK:-/boot/sysmap_generic-${INSTVERSION}}
+MAP_GENERIC=${MAP_GENERIC:-$(ls -1 /boot/System.map-generic-${INSTVERSION} 2> /dev/null)}
+if ! [ -f "${MAP_GENERIC}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${MAP_GENERIC}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${MAP_GENERIC}\033[1;31m!\033[0m"
+    rm -v ${MAP_GENERIC%%-*}
+     ln -vs ${MAP_GENERIC} ${MAP_GENERIC_LNK}
+      fi
+
+CONFIG_GENERIC_LNK=${CONFIG_GENERIC_LNK:-/boot/config_generic-${INSTVERSION}${ARCH}}
+CONFIG_GENERIC=${CONFIG_GENERIC:-$(ls -1 /boot/config-generic-${INSTVERSION}${ARCH} 2> /dev/null)}
+if ! [ -f "${CONFIG_GENERIC}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${CONFIG_GENERIC}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${CONFIG_GENERIC}\033[1;31m!\033[0m"
+    rm -v ${CONFIG_GENERIC%%-*} ${CONFIG_GENERIC%-*}
+     ln -vs ${CONFIG_GENERIC} ${CONFIG_GENERIC_LNK}
+      fi
+###########################End vars kernel generic###########################
+#############################################################################
+#####################Begin config initrd kernel generic######################
+INITRD_GENERIC=${INITRD_GENERIC:-/boot/initrd-generic-${INSTVERSION}}
+INITRD_GENERIC_LNK=${INITRD_GENERIC_LNK:-/boot/initrd_generic-${INSTVERSION}}
+
+${MKINITRD} -c -k ${INSTVERSION} -f ${SYSARQ} -r ${DEVDISK} -m ${MKINITRDSTRINGS} -u -o ${INITRD_GENERIC}
+
+if ! [ -f "${INITRD_GENERIC}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${INITRD_GENERIC}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${INITRD_GENERIC}\033[1;31m!\033[0m"
+    ln -vs ${INITRD_GENERIC} ${INITRD_GENERIC_LNK}
+     fi
+######################End config initrd kernel generic#######################
+#############################################################################
+#################Begin input position install kernel generic#################
+echo -ne "\n\033[1;35mDo you want to add generic-kernel \033[1;32ma\033[1;35m(\033[1;32mfter\033[1;35m) or at the \033[1;32me\033[1;35m(\033[1;32mnd\033[1;35m) of lilo.conf\033[1;32m?\033[0m "
+
+read installgeneric
+
+installgeneric=$(echo ${installgeneric} | tr A-Z a-z) #lowercase
+##################End input position install kernel generic##################
+#############################################################################
+########################Begin install kernel generic#########################
+case "${installgeneric}" in
+'a')
+  if [ -z "${GENERIC_LABEL}" -a -f "${VM_GENERIC_LNK}" ]; then
+   ## Adiciona partição após "# End LILO global section" no lilo.conf
+   sed -i "${LINE}s/$/\n# Linux ${INSTVERSION} bootable generic partition config begins/g;
+           ${LINE}s/$/\nimage  = ${VM_GENERIC_LNK//\//\\/}/g;
+           ${LINE}s/$/\ninitrd = ${INITRD_GENERIC_LNK//\//\\/}/g;
+           ${LINE}s/$/\nroot   = ${DEVDISK//\//\\/}/g;
+           ${LINE}s/$/\nlabel  = GNRC-${INSTVERSION}/g;
+           ${LINE}s/$/\nread-only/g;
+           ${LINE}s/$/\n# Linux ${INSTVERSION} bootable generic partition config ends/g;" ${LILO}
+
+    if ! [ -z "$(grep "vmlinuz_generic-${INSTVERSION}" ${LILO})" ]; then
+     echo -e "\n\033[1;35mKernel GNRC\033[1;33m-\033[1;32m${INSTVERSION} \033[1;35minstall lilo changed sucessfully\033[1;31m!\033[0m\n"
+    fi
+   else
+    echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;34m${VM_GENERIC_LNK} and ${INITRD_GENERIC_LNK}\033[1;31m!\033[0m"
+  fi
+;;
+
+'e')
+  if [ -z "${GENERIC_LABEL}" -a -f "${VM_GENERIC_LNK}" ]; then
+  ## Adiciona partição no fim de lilo.conf
+echo "# Linux ${INSTVERSION} bootable generic partition config begins
+image  = ${VM_GENERIC_LNK}
+initrd = ${INITRD_GENERIC_LNK}
+root   = ${DEVDISK}
+label  = GNRC-${INSTVERSION}
+read-only
+# Linux ${INSTVERSION} bootable generic partition config ends" >> ${LILO}
+    if ! [ -z "$(grep "vmlinuz_generic-${INSTVERSION}" ${LILO})" ]; then
+     echo -e "\n\033[1;35mKernel GNRC\033[1;33m-\033[1;32m${INSTVERSION} \033[1;35minstall lilo changed sucessfully\033[1;31m!\033[0m\n"
+    fi
+   else
+    echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;34m${VM_GENERIC_LNK} and ${INITRD_GENERIC_LNK}\033[1;31m!\033[0m"
+  fi
+;;
+esac
+###################End exists kernel generic in lilo.conf####################
+#############################################################################
+;;
+#########################End install kernel generic##########################
+#############################################################################
+# Begin case install HUGE_PKG
+'h') # Begin install option HUGE_PKG
+#############################################################################
+###################Begin exists kernel huge in lilo.conf#####################
+#############################################################################
+###########################Begin install HUGE_PKG############################
+HUGE_PKG=${HUGE_PKG:-$(ls ${PWD}/kernel | egrep -o 'kernel-huge+-[0-9]+(.*).t?z$')}
+
+HUGE_EXISTS=${HUGE_EXISTS:-$(ls -1 /var/log/packages/kernel-huge-${INSTVERSION}* 2> /dev/null)}
+
+if [ -z "${HUGE_EXISTS}" -a -f "${PWD}/kernel/${HUGE_PKG}" ]; then
+ installpkg ${PWD}/kernel/${HUGE_PKG}
+  fi
+############################End install HUGE_PKG#############################
+#############################################################################
+###########################Begin vars kernel huge############################
+HUGE_LABEL=${HUGE_LABEL:-$(grep "HUGE-${INSTVERSION}" ${LILO})}
+
+VM_HUGE_LNK=${VM_HUGE_LNK:-/boot/vmlinuz_huge-${INSTVERSION}}
+VM_HUGE=${VM_HUGE:-$(ls -1 /boot/vmlinuz-huge-${INSTVERSION} 2> /dev/null)}
+if ! [ -f "${VM_HUGE}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${VM_HUGE}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${VM_HUGE}\033[1;31m!\033[0m"
+    ln -vs ${VM_HUGE} ${VM_HUGE_LNK}
+     rm -v ${VM_HUGE%%-*} ${VM_HUGE%-*}
+      fi
+
+HUGE_MAP_LNK=${HUGE_MAP_LNK:-/boot/sysmap_huge-${INSTVERSION}}
+HUGE_MAP=${HUGE_MAP:-$(ls -1 /boot/System.map-huge-${INSTVERSION} 2> /dev/null)}
+if ! [ -f "${HUGE_MAP}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${HUGE_MAP}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${HUGE_MAP}\033[1;31m!\033[0m"
+    rm -v ${HUGE_MAP%%-*}
+     ln -vs ${HUGE_MAP} ${HUGE_MAP_LNK}
+      fi
+
+HUGE_CONFIG_LNK=${HUGE_CONFIG_LNK:-/boot/config_huge-${INSTVERSION}${ARCH}}
+HUGE_CONFIG=${HUGE_CONFIG:-$(ls -1 /boot/config-huge-${INSTVERSION}${ARCH} 2> /dev/null)}
+if ! [ -f "${HUGE_CONFIG}" ]; then
+ echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;32m${HUGE_CONFIG}\033[1;31m!\033[0m"
+  else
+   echo -e "\033[1;35mAh\033[1;37m, \033[1;35mfound it \033[1;32m${HUGE_CONFIG}\033[1;31m!\033[0m"
+    rm -v ${HUGE_CONFIG%%-*}
+     ln -vs ${HUGE_CONFIG} ${HUGE_CONFIG_LNK}
+      fi
+#############################End vars kernel huge############################
+#############################################################################
+##################Begin input position install kernel huge###################
+echo -ne "\n\033[1;35mDo you want to add huge-kernel \033[1;32ma\033[1;35m(\033[1;32mfter\033[1;35m) or at the \033[1;32me\033[1;35m(\033[1;32mnd\033[1;35m) of lilo.conf\033[1;32m?\033[0m "
+
+read installhuge
+
+installhuge=$(echo ${installhuge} | tr A-Z a-z) #lowercase
+###################End input position install kernel huge####################
+#############################################################################
+###########################Begin install kernel huge#########################
+case "${installhuge}" in
+'a')
+  if [ -z "${HUGE_LABEL}" -a -f "${VM_HUGE_LNK}" ]; then
+   ## Adiciona partição após "# End LILO global section" no lilo.conf
+   sed -i "${LINE}s/$/\n# Linux ${INSTVERSION} bootable huge partition config begins/g;
+           ${LINE}s/$/\nimage  = ${VM_HUGE_LNK//\//\\/}/g;
+           ${LINE}s/$/\nroot   = ${DEVDISK//\//\\/}/g;
+           ${LINE}s/$/\nlabel  = HUGE-${INSTVERSION}/g;
+           ${LINE}s/$/\nread-only/g;
+           ${LINE}s/$/\n# Linux ${INSTVERSION} bootable huge partition config ends/g;" ${LILO}
+
+    if ! [ -z "$(grep "vmlinuz_huge-${INSTVERSION}" ${LILO})" ]; then
+     echo -e "\n\033[1;35mKernel HUGE\033[1;33m-\033[1;32m${INSTVERSION} \033[1;35minstall lilo changed sucessfully\033[1;31m!\033[0m\n"
+    fi
+   else
+    echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;34m/boot\033[1;31m!\033[0m"
+  fi
+;;
+
+'e')
+  if [ -z "${HUGE_LABEL}" -a -f "${VM_HUGE_LNK}" ]; then
+  ## Adiciona partição no fim de lilo.conf
+echo "# Linux ${INSTVERSION} bootable huge partition config begins
+image  = ${VM_HUGE_LNK}
+root   = ${DEVDISK}
+label  = HUGE-${INSTVERSION}
+read-only
+# Linux ${INSTVERSION} bootable huge partition config ends" >> ${LILO}
+    if ! [ -z "$(grep "vmlinuz_huge-${INSTVERSION}" ${LILO})" ]; then
+     echo -e "\n\033[1;35mKernel HUGE\033[1;33m-\033[1;32m${INSTVERSION} \033[1;35minstall lilo changed sucessfully\033[1;31m!\033[0m\n"
+    fi
+   else
+    echo -e "\033[1;31mNot\033[1;37m, \033[1;31mfound it \033[1;34m/boot\033[1;31m!\033[0m"
+  fi
+;;
+esac
+####################End exists kernel huge in lilo.conf######################
+#############################################################################
+;;
+############################End install kernel huge##########################
+#############################################################################
+*)
+ echo -e "\nEnter \033[1;32mg\033[1;35m(\033[1;32meneric\033[1;35m) or at the \033[1;32mh\033[1;35m(\033[1;32muge\033[1;35m)\033[0m\n"
+  ;;
+
+esac
+##################End case install GENERIC_PKG and HUGE_PKG##################
+#############################################################################
+fi
+###############Section Verify Root Systems (U|Li)n(i|u)x ends################
+#############################################################################

@@ -1,0 +1,148 @@
+#!/bin/bash
+##[Ficha: ]#######################################[Descricao: ]##############################################################
+#                                               #                                                                           #
+# [-] Autor..........: Jean Zonta               # [-] Script que inicia scripts e programas localizados em /etc/rc.d        #
+# [-] Pseudonym......: wiki.anon                #                                                                           #
+# [-] Os destination.: Slackware family         ##[Notas: ]##################################################################
+# [-] Script Name....: service                  #                                                                           #
+# [-] Create day.....: Sab May 18 21:35:06 2019 # [-] Este script foi criado para encurtar a chamada a programas e scripts  #
+# [-] Last Update....: Sab Jul 25 17:01:20 2020 # localizados em /etc/rc.d/ tornando a vida do usuário mais suave ao chamar #
+# [-] License........: GNU/GPL V3+              # os scripts executando as funções start, stop, restart, status e etc..     #
+# [-] Script Version.: 0.0.3                    #                                                                           #
+#                                               #                                                                           #
+##[e-mail: ]#################################################################################################################
+#                                                                                                                           #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                                                #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@'                    #
+#                                                                                                                           #
+##[Begin to install and tests: ]#############################################################################################
+#                                                                      #
+# [-] Copie para um dos diretório de sua preferência.                  #
+#                                                                      #
+# Copie para o diretório /usr/bin                                      #
+# bash$ sudo cp service /usr/bin/service                               #
+#                                                                      #
+# Altere a permissão de execução para 755                              #
+# bash$ sudo chmod -v 755 /usr/bin/service                             #
+#                                                                      #
+# [-] Execution tests:                                                 #
+#                                                                      #
+# bash$ sudo service + <enter>                                         #
+# Usage: service <progname> or <rc.progname>                           #
+#                                                                      #
+# bash$ sudo service a + <enter>                                       #
+# "a" do not valid service!                                            #
+#                                                                      #
+# bash$ sudo service 1 + <enter>                                       #
+# "1" do not valid service!                                            #
+#                                                                      #
+# bash$ sudo service asdf + <enter>                                    #
+# "asdf" do not valid service!                                         #
+#                                                                      #
+# bash$ sudo service <progname> or <rc.progname> + <enter>             #
+# service <progname> "{start|stop|restart}"                            #
+#                                                                      #
+# bash$ sudo service <progname> or <rc.progname> + a + <enter>         #
+# service <progname> "{start|stop|restart}"                            #
+#                                                                      #
+# bash$ sudo service <progname> or <rc.progname> + 1 + <enter>         #
+# service <progname> "{start|stop|restart}"                            #
+#                                                                      #
+# bash$ sudo service <progname> or <rc.progname> + rc + <enter>        #
+# service <progname> "{start|stop|restart}"                            #
+#                                                                      #
+# bash$ sudo service <progname> or <rc.progname> + asdf + <enter>      #
+# service <progname> "{start|stop|restart}"                            #
+#                                                                      #
+# bash$ sudo service rc.keymap                                         #
+# Not exists options to "rc.keymap"                                    #
+#                                                                      #
+# bash$ sudo service rc.fuse                                           #
+# Not exists options to "rc.fuse"                                      #
+#                                                                      #
+# bash$ sudo service rc.local                                          #
+# Not exists options to "rc.local"                                     #
+#                                                                      #
+# bash$ sudo service font                                              #
+# Not exists options to "rc.font"                                      #
+#                                                                      #
+# bash$ sudo service loop                                              #
+# Not exists options to "rc.loop"                                      #
+#                                                                      #
+# bash$ sudo service rc.modules                                        #
+# Not exists options to "rc.modules"                                   #
+#                                                                      #
+# bash$ sudo service rc.modules.local                                  #
+# Not exists options to "rc.modules.local"                             #
+#                                                                      #
+# [-] Caso rc.<progname> seja um serviço válido e a permição seja 644. #
+#                                                                      #
+# bash$ service <progname>                                             #
+# Enter: sudo service <progname> or <rc.progname> + <options>          #
+#                                                                      #
+# bash$ sudo service <progname>                                        #
+# Usage: service <progname> "{start|stop|restart}"                     #
+#                                                                      #
+########################################################################
+if [ $(id -u) -ne 0 ]; then
+ echo -e "\nEnter: sudo ${0##*/} <progname> + <options> or <rc.progname> + <options>\n"
+  else
+  SCRIPTS=($(ls -1 /etc/rc.d/rc.*))
+  NOSTARTS=($(ls -1 /etc/rc.d/rc.{0,4,6,K,M,gpm,keymap,inet2,local,font,loop,alsa,alsa-oss,modules,modules.local,sysvinit,cpufreq}))
+
+if [ -z "${1}" ]; then
+ echo -e "\nUsage: ${0##*/} <progname> + <options> or <rc.progname> + <options>\n"
+  else
+  SRVNM="${1#*.*}" # Caso o usuário digite <rc.progname> retira rc. e SRVNM=<progname>.
+  SRVNM="${SRVNM/.conf/}" #Retira extensão .conf no fim do programa caso exista.
+  OPT="${2#*.*}" # Caso o usuário digite alguma string com ponto.
+
+# Estes pequenos if's abaixo verifica a sub opção do usuário ex:
+#
+# Bash Input:
+# bash# <service> <progname> s
+#
+# Se <progname> for um serviço válido então mostrará todas opções:
+#
+# A Saida será:
+# bash# service <progname> "{start|stop|restart}"
+#
+# e não algo como:
+# usage: /caminho/do/programa/rc.<progname> "{start|stop|restart}"
+if [ -z "${OPT}" ]; then
+ OPT="${SRVNM}" #Se variável OPT estiver vazia então OPT=<scriptname>.
+elif [ ${#OPT} -gt 0 -a ${#OPT} -eq 1 -o ${#OPT} -eq 2 ]; then #Se o tamanho for maior que 0 e igual a 1 ou 2 pega o nome do programa como uma opção
+ OPT="${SRVNM}"
+fi
+
+# Busca o programa no vetor caso exista.
+if ! grep -wq "${SRVNM}" <<< ${SCRIPTS[@]}; then
+ echo -e "\n\"${SRVNM}\" do not valid service!\n"
+  else
+  for ((i = 0; i < ${#SCRIPTS[@]}; i++)) do
+   if [ "${SCRIPTS[${i}]}" = "/etc/rc.d/rc.${SRVNM}" ]; then
+   RCSCRIPT="${SCRIPTS[${i}]}"
+   fi
+  done
+
+# Busca o programa que não possui opções de {start,stop,restart} no vetor.
+if grep -wq "${RCSCRIPT##*rc.}" <<< ${NOSTARTS[@]}; then
+ echo -e "\nNot exists options to \"${RCSCRIPT##*/}\"\n"
+elif ! [ -x "${RCSCRIPT}" ]; then #Se a permissão de execução não for igual a 755.
+ chmod 755 ${RCSCRIPT}
+fi # Fim da busca de programa que tem opções para start.
+
+# Pega as opções do serviço e retira aspas, tudo o que esta entre chave, espaço em branco no inicio e fim da linha.
+OPTIONS="$(egrep 'Usage|usage' ${RCSCRIPT} | cut -f2 -d'0' | sed 's/"//g;s/{//g;s/}//g;s/^\s*//g;s/\s*$//g;')"
+
+if [ -z "$(echo ${OPTIONS} | grep ${OPT})" ]; then
+ echo -e "\nUsage: ${0##*/} ${SRVNM} \"{${OPTIONS}}\"\n" #Usage: service <progname> "{start|stop|restart}".
+  else
+  ${RCSCRIPT} ${OPT}
+  if [ $# -eq 1 ]; then
+   echo "Failed to \"${OPT}\" the ${RCSCRIPT##*rc.}"
+    fi
+fi # Fim check OPTIONS and OPT.
+fi # Fim da busca de ${SRVNM} no vetor.
+fi # Fim se variável ${1} vazia.
+fi # Fim se user = root.

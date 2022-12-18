@@ -1,0 +1,93 @@
+
+function man_help()
+{
+ echo -e "\n\033[33;1mhelp:\n\033[32;1m#\033[0m \033[35;1mbash \033[34;1mrendir \033[32;1m/\033[31;1mroot\033[32;1m\nor\n\033[32;1m$\033[0m \033[35;1mbash \033[34;1mrendir \033[32;1m/home\033[32;1m/\033[31;1m${NOLOGIN}\033[0m\n"
+}
+
+function edit_xdg(){
+echo "# Default settings for user directories
+#
+# The values are relative pathnames from the home directory and
+# will be translated on a per-path-element basis into the users locale
+XDG_DOCUMENTS_DIR=Documents
+XDG_DOWNLOADS_DIR=Downloads
+XDG_MOVIES_DIR=Movies
+XDG_SCREENS_DIR=Vídeos
+XDG_PHOTOS_DIR=Photos
+XDG_PICTURES_DIR=Pictures
+XDG_TEMPLATES_DIR=Templates
+XDG_SONGS_DIR=Músicas
+XDG_PROJECTS_DIR=Projects
+XDG_PUBLICSHARE_DIR=Public
+XDG_WORKSPACE_DIR=Workspace/GitHub
+XDG_PACKAGES_DIR=Workspace/Packages
+XDG_DESKTOP_DIR=Desktop
+# Another alternative is:
+#MUSIC=Documents/Music
+#PICTURES=Documents/Pictures
+#VIDEOS=Documents/Videos" > /etc/xdg/user-dirs.defaults
+}
+
+function edit_root(){
+
+local INPUT=${1}
+
+cat >/${INPUT/\/}/.config/user-dirs.dirs<<EOF
+# This file is written by xdg-user-dirs-update
+# If you want to change or add directories, just edit the line you're
+# interested in. All local changes will be retained on the next run.
+# Format is XDG_xxx_DIR="\$HOME/yyy", where yyy is a shell-escaped
+# homedir-relative path, or XDG_xxx_DIR="/yyy", where /yyy is an
+# absolute path. No other format is supported.
+#
+XDG_DOCUMENTS_DIR="\${HOME}/Documentos"
+XDG_DOWNLOADS_DIR="\${HOME}/Downloads"
+XDG_MOVIES_DIR="\${HOME}/Filmes"
+XDG_SCREENS_DIR="\${HOME}/Vídeos"
+XDG_PHOTOS_DIR="\${HOME}/Fotos"
+XDG_PICTURES_DIR="\${HOME}/Imagens"
+XDG_TEMPLATES_DIR="\${HOME}/Modelos"
+XDG_SONGS_DIR="\${HOME}/Músicas"
+XDG_PROJECTS_DIR="\${HOME}/Projetos"
+XDG_PUBLICSHARE_DIR="\${HOME}/Público"
+XDG_WORKSPACE_DIR="\${HOME}/Workspace/GitHub"
+XDG_PACKAGES_DIR="\${HOME}/Workspace/Pacotes"
+XDG_DESKTOP_DIR="\${HOME}/Área de Trabalho"
+EOF
+
+cat >/${INPUT/\/}/.config/user-dirs.locale<<EOF
+${LANG%%.*}
+EOF
+}
+
+function edit_home(){
+
+local INPUT=${1}
+
+cat >/home/${INPUT/*\/}/.config/user-dirs.dirs<<EOF
+# This file is written by xdg-user-dirs-update
+# If you want to change or add directories, just edit the line you're
+# interested in. All local changes will be retained on the next run.
+# Format is XDG_xxx_DIR="\$HOME/yyy", where yyy is a shell-escaped
+# homedir-relative path, or XDG_xxx_DIR="/yyy", where /yyy is an
+# absolute path. No other format is supported.
+#
+XDG_DOCUMENTS_DIR="\${HOME}/Documentos"
+XDG_DOWNLOADS_DIR="\${HOME}/Downloads"
+XDG_MOVIES_DIR="\${HOME}/Filmes"
+XDG_SCREENS_DIR="\${HOME}/Vídeos"
+XDG_PHOTOS_DIR="\${HOME}/Fotos"
+XDG_PICTURES_DIR="\${HOME}/Imagens"
+XDG_TEMPLATES_DIR="\${HOME}/Modelos"
+XDG_SONGS_DIR="\${HOME}/Músicas"
+XDG_PROJECTS_DIR="\${HOME}/Projetos"
+XDG_PUBLICSHARE_DIR="\${HOME}/Público"
+XDG_WORKSPACE_DIR="\${HOME}/Workspace/GitHub"
+XDG_PACKAGES_DIR="\${HOME}/Workspace/Pacotes"
+XDG_DESKTOP_DIR="\${HOME}/Área de trabalho"
+EOF
+
+cat >/home/${INPUT/*\/}/.config/user-dirs.locale<<EOF
+${LANG%%.*}
+EOF
+}

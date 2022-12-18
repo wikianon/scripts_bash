@@ -1,0 +1,113 @@
+#!/bin/sh
+
+#Renomeia apenas diretórios que forão criado com aspas
+# "Documentos"/  "Downloads"/  "Filmes"/  "Fotos"/  "Modelos"/  "Músicas"/  "Packages"/  "Projetos"/  "Público"/  "Vídeos"/  "Workspace/  "Área\ de\ trabalho"/ 
+# Para usar o programa basta apenas digitar:
+#
+#bash# bash rendir /root
+#
+#ou
+#
+#bash$ bash rendir /home/usuario
+#
+
+IFS='
+'
+. ./functions-xdg
+
+
+S1=${S1:-$1}
+
+if [ -z ${S1} ]; then
+ man_help
+  echo -e "\033[31;1mEnter home dir to alter\033[1;34m!\033[0m\n"
+   elif [ ! -d ${S1} ]; then
+    man_help
+     echo -e "\033[31;1mI don\033[32;1m'\033[31;1mt Dir\033[1;34m!\033[0m\n"
+      elif [[ ${S1} != /root && ${S1} != /home/${NOLOGIN} ]]; then
+       man_help
+        echo -e "\033[31;1mYour directory not user home\033[1;34m!\033[0m\n"
+         else
+          cd ${S1}
+
+if [ "${S1/*\/}" = "root" ]; then
+
+edit_xdg
+
+if [[ -d /${S1/*\/}/.config && ! -f /${S1/*\/}/.config/user-dirs.dirs ]]; then
+
+edit_root ${S1}
+
+elif [[ -d /${S1/*\/}/.config && -f /${S1/*\/}/.config/user-dirs.dirs ]]; then
+
+chattr -i /${S1/*\/}/.config/user-dirs.dirs
+
+edit_root ${S1}
+
+else
+
+mkdir -p /${S1/*\/}/.config
+
+edit_root ${S1}
+
+fi
+
+chown -R  ${S1/*\/}.${S1/*\/} /${S1/*\/}/
+
+chmod 600 /${S1/*\/}/.config/user-dirs.dirs  # Altera a permissão para -rw-------
+chmod 644 /${S1/*\/}/.config/user-dirs.locale # Altera a permissão de para -rw-r--r--
+chattr +i /${S1/*\/}/.config/user-dirs.dirs # Bloqueia a alteração e remoção do arquivo pelo root
+
+else
+
+if [[ -d /home/${S1/*\/}/.config  && ! -f /home/${S1/*\/}/.config/user-dirs.dirs ]]; then #A variável S1 irá conter o caminho do diretório do usuario, fazendo cd $S1 e pegando apenas o nome de usuario
+
+edit_home ${S1}
+
+elif [[ -d /home/${S1/*\/}/.config  && -f /home/${S1/*\/}/.config/user-dirs.dirs ]]; then
+
+chattr -i /home/${S1/*\/}/.config/user-dirs.dirs
+
+edit_home ${S1}
+
+else
+
+mkdir -p /home/${S1/*\/}/.config
+
+edit_home ${S1}
+
+fi
+
+chown -R  ${S1/*\/}.${S1/*\/} /home/${S1/*\/}
+
+chmod 600 /home/${S1/*\/}/.config/user-dirs.dirs  # Altera a permissão para -rw-------
+chmod 644 /home/${S1/*\/}/.config/user-dirs.locale # Altera a permissão de para -rw-r--r--
+chattr +i /home/${S1/*\/}/.config/user-dirs.dirs # Bloqueia a alteração e remoção do arquivo pelo root
+
+fi # Fim se HOME = root
+
+xdg-user-dirs-update --force
+
+LSDIRS=${LSDIRS:-$(ls -d */  | grep "\"")}
+EXISTS=${EXISTS:-$(cd ~; ls -d *)}
+
+if [[ -z "${LSDIRS}" && ! -z "${EXISTS}" ]]; then
+ echo -e "\033[36;1m\nDirs created sucessfully\033[35;1m!\033[0m\n"
+  else
+# Caso tudo dê errado Renomeia as pastas 
+for DIRS in ${LSDIRS}
+do
+  DIRECTORY="$(sed -E 's/\"/\\"/g;s/\///g;' <<< "${DIRS}")"
+   NEWNAME="$(sed -E 's/\"//g;s/\\//g;s/\///g;' <<< "${DIRS}")"
+    mv ${DIRECTORY} ${NEWNAME}
+    
+  if [ $? -ne 0 ]; then
+   echo -e "\033[37;1m\n${DIRECTORY/\//} \033[0m<-\033[31;1m nothing done!\033[0m\n\n"
+    else
+     echo -e "\033[36;1m\nDirectory \033[32;1m(\033[31;1m${DIRECTORY}\033[32;1m)\033[36;1m Renamed to \033[33;1m${NEWNAME/\//}\033[36;1m successfully\033[35;1m!\033[0m"
+      fi
+done
+echo
+fi
+
+fi # Fim se -z S1

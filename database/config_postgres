@@ -1,0 +1,230 @@
+#!/bin/sh
+##[Ficha: ]#######################################[Descricao: ]##############################################################
+#                                               #                                                                           #
+# [-] Autor..........: Jean Zonta               # [-] Script que configura banco de dados postgres.                         #
+# [-] Pseudonym......: wiki.anon                #                                                                           #
+# [-] Os destination.: Linux Gnu Slackware      ##[Notas: ]##################################################################
+# [-] Script Name....: config_postgres          #                                                                           #
+# [-] Create day.....: Seg Jan 16 16:40:00 2017 # [-] Script criado para configurar ambiente e senha do usuario postgres.   #
+# [-] Last Update....: Sex Apr 03 11:50:30 2020 #                                                                           #
+# [-] License........: GNU/GPL V3+              #                                                                           #
+# [-] Script Version.: 0.0.2                    #                                                                           #
+#                                               #                                                                           #
+##[e-mail: ]#################################################################################################################
+#                                                                                                                           #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                                                #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@'                    #
+#                                                                                                                           #
+#############################################################################################################################
+VARLIB=${VARLIB:-/var/lib}
+VARLOG=${VARLOG:-/var/log}
+GROUP=${GROUP:-/etc/group}
+POSTGRES=${POSTGRES:-postgres}
+POSTGRESQL=${POSTGRESQL:-9.6}
+PASSWD=${PASSWD:-/etc/passwd}
+SHADOW=${SHADOW:-/etc/shadow}
+PROMPTSPG=($(cat /etc/shells))
+SUDOERS=${SUDOERS:-/etc/sudoers}
+LIBPGSQL=${LIBPGSQL:-${VARLIB}/pgsql}
+LOGPGSQL=${LOGPGSQL:-${VARLOG}/pgsql}
+TABLESPACE=${TABLESPACE:-${LIBPGSQL}/${POSTGRESQL}/data}
+RC_POSTGRESQL=${RC_POSTGRESQL:-/etc/rc.d/rc.postgresql}
+PACKAGE=${PACKAGE:-$(ls -1 /var/log/packages/postgresql* | cut -f5 -d/)}
+######################################
+######################################
+if [ "$(id -un)" != "root" ]; then
+ echo -e "\n\t\033[1;31mMake sudo to config database\033[1;32m!\033[0m\n"
+  else
+######################################
+######################################  
+  if [ -z "${PACKAGE}" ]; then
+   echo -e "\033[1;31mPostgresql not instaled\033[1;32m!\033[0m\n"
+    installpkg ${PWD}/database/pgadmin3-1.22.1-x86_64-5_slonly.txz
+     installpkg ${PWD}/database/postgresql-9.6.4-x86_64-1_slonly.txz
+      #installpkg $(pwd)/database/postgresql-10.2-x86_64-1_SBo.tgz 
+       fi
+######################################
+######################################
+OPTIONS="echo \"Usage: \$0 {start|stop|restart|status|reload|force-stop|force-restart|unclean-stop|unclean-restart}\""
+ sed -i "/echo \"[U|u]sage:/ s/echo.*/${OPTIONS}/g;" ${RC_POSTGRESQL}
+  if [ $? -eq 0 ]; then
+   echo -e "\033[1;35mFile \033[1;31m${RC_POSTGRESQL}\033[1;35m changed sucessfully\033[1;32m!\033[0m\n"
+    fi
+######################################
+######################################
+if ! [ -z "$(getent passwd ${POSTGRES})" ]; then
+ echo -e "\n\033[1;35mUser \033[1;32m\"\033[1;36m${POSTGRES}\033[1;32m\" \033[1;35malready exists\033[1;32m!\033[0m\n"
+  else
+   echo -e "\033[1;35mCriando usuário \033[1;36m${POSTGRES}\033[1;32m!\033[0m\n"  
+######################################
+######################################
+# Configura id do usuário
+LASTIDPASSWD="$(cat ${PASSWD} | sed '/^$/d' | sed -n '$p' | cut -f3 -d':')" # id do último usuário ou linha
+LASTIDGROUP="$(cat ${GROUP} | sed '/^$/d' | sed -n '$p' | cut -f3 -d':')" # id do ultimo grupo para não ficar repetido com o id do usuário
+
+:<<COMENT
+A verificação do id do usuário se faz nescessária automaticamente, uma vez que,
+o primeiro usuário é criado assumindo o id 1000 se for criado com o comando useradd,
+depois o grupo sudo será criado assumindo o id 1001 se for criado com o comando groupadd. 
+Caso o usuário recorra ao script para criar um novo usuário ou mesmo seu primeiro, pode ocorrer
+do grupo sudo ficar com o id do usuário, para que isso não aconteça, 
+foi nescessário fazer a verificação do id em passwd e group, assim o próximo usuário 
+que for criado com o script, não terá o mesmo id do grupo sudo, e nem o grupo sudo ficará
+com o id idêntico ao do novo usuário ou os outros usuarios criados posteriormente com o id dos usuarios anteriores,
+este script pode ser usado tanto para criar e configurar apenas um usuário.
+COMENT
+
+if [ "${LASTIDPASSWD}" -eq "1000" ]; then
+ IDUSERPG="$((${LASTIDPASSWD}+1))"
+   
+  if [ ! -z "$(cat ${PASSWD} | grep ${IDUSERPG})" -a "${LASTIDPASSWD}" = "${IDUSERPG}" ]; then
+   IDUSERPG="$((${LASTIDPASSWD}+1))" #Soma o último id do user encontrado em /etc/passwd ficando 1001:1001 ou 1002:1002
+   #else
+   #IDUSERPG="${IDUSERPG}" #Faz com que o último id do user encontrado em /etc/passwd fique 1001:1002 ou 1002:1003
+  fi
+   
+  if [ ! -z "$(cat ${GROUP} | grep ${IDUSERPG})" -a "${LASTIDGROUP}" = "${IDUSERPG}" ]; then
+   IDUSERPG="$((${LASTIDGROUP}+1))" #Soma o último id do user encontrado em /etc/group ficando 1001:1001 ou 1002:1002
+   #else
+   #IDUSERPG="${IDUSERPG}" #Faz com que o último id do user encontrado em /etc/group fique 1001:1002 ou 1002:1003      
+  fi
+fi
+######################################
+######################################
+######################################
+# Configura senha do usuário
+PASSWORDPG="$(tr -dc _a-z-A-Z-0-9@$%* < /dev/urandom | head -c8)" #gera senhas de até 8 caracteres
+
+read -sp "$(echo -ne "\n\033[1;35mEnter password user \033[1;36m${POSTGRES}\033[1;32m: \033[0m")" USRPASSPG
+
+if [ -z "${USRPASSPG}" ]; then
+ USRPASSPG="$(python -c "import crypt; print(crypt.crypt('${PASSWORDPG}', '\$6\$PoStGrEsQlPsSwDb\$'))")" # Aqui podemos usar 5=SHA256 ou 6=SHA512 ambos funcionam perfeitamente 
+  echo "${POSTGRES}:${PASSWORDPG}" >> ~/.passwords_config_user
+   else
+    USRPASSPG="$(python -c "import crypt; print(crypt.crypt('${USRPASSPG}', '\$6\$PoStGrEsQlPsSwDb\$'))")"
+     fi
+######################################
+######################################
+######################################
+echo -ne "\n\n\033[1;35mDefault shell's \033[1;35m(\033[1;31m$(echo ${PROMPTSPG[@]/*\/} | sed 's/ /\\033[1;32m,\\033[1;31m/g;')\033[1;35m)\n\033[1;35mEnter your shell\033[1;32m: \033[0m"
+read SHELLSPG
+
+if ! grep -wq "${SHELLSPG}" <<< ${PROMPTSPG[@]/*\/}; then
+ SHELLSPG="bash"
+  fi
+######################################
+######################################
+######################################
+echo -ne "\n\033[1;35mEnter the coments user \033[1;36m${POSTGRES}\033[1;32m: \033[0m"
+read COMENTARIOPG
+
+if [ -z "${COMENTARIOPG}" ]; then
+ COMENTARIOPG="PostgreSQL Database Slackware"
+  fi
+######################################
+######################################
+######################################
+echo "${POSTGRES}:x:${IDUSERPG}:${POSTGRES}" >> ${GROUP}
+ if [ $? -eq 0 ]; then
+  echo -e "\n\033[1;35mGrupo \033[1;32m\"\033[1;36m${POSTGRES}\033[1;32m\" \033[1;35mAdicionado \033[1;32m\"\033[1;36m${GROUP}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m"
+   fi
+######################################
+######################################
+######################################
+if [ -z "$(grep "^${POSTGRES}" ${SUDOERS})" ]; then #Adciona novo usuario criado a /etc/sudoers depois do sudo ter sido configurado
+ sed -i "/%sudo ALL=(ALL) NOPASSWD: ALL/a${POSTGRES} ALL=(ALL:ALL) NOPASSWD: ALL" ${SUDOERS}
+  if [ $? -eq 0 ]; then
+   echo -e "\n\033[1;34mUsuário \033[1;32m\"\033[1;36m${DBUSERPG}\033[1;32m\" \033[1;34madicionado a \033[1;32m\"\033[1;36m${SUDOERS}\033[1;32m\" \033[1;34m com sucesso\033[1;32m!\033[0m"
+    fi
+     fi
+######################################
+######################################
+######################################
+echo "${POSTGRES}:x:${IDUSERPG}:${IDUSERPG}:${COMENTARIOPG}:${LIBPGSQL}/${POSTGRESQL}:/bin/${SHELLSPG}" >> ${PASSWD}
+ if [ $? -eq 0 ]; then
+  echo -e "\n\033[1;35mUsuário \033[1;32m\"\033[1;36m${POSTGRES}\033[1;32m\" \033[1;35mAdicionado a \033[1;32m\"\033[1;36m${PASSWD}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m" 
+   fi
+######################################
+######################################
+######################################
+# Pega o número do usuario root na primeira linha em /etc/shadow
+ROOTFRST="$(sed -n '1p' ${SHADOW} | cut -f3 -d':')"
+
+# Pega o número do ultimo usuario em /etc/shadow
+ROOTLAST="$(cat ${SHADOW} | sed '/^$/d' | sed -n '$p' | cut -f3 -d':')"
+
+USERQTD="$(cat ${SHADOW} | grep -vE "nologin|ftp" | grep home | awk -F':' '{ print $1}' | wc -l)"
+
+if [ "${ROOTFRST}" -gt "${ROOTLAST}" ]; then
+ NUMBERPG="$((${ROOTFRST}+1))"
+ elif [ "${ROOTFRST}" -lt "${ROOTLAST}" ]; then
+ NUMBERPG="$((${ROOTLAST}+1))"
+fi
+######################################
+######################################
+######################################
+echo "${POSTGRES}:${USRPASSPG}:${NUMBERPG}:0:::::" >> ${SHADOW} # Para reconfigurar ver /etc/login.defs
+ if [ $? -eq 0 ]; then
+  echo -e "\n\033[1;35mUsuário \033[1;32m\"\033[1;36m${POSTGRES}\033[1;32m\" \033[1;35mAdicionado em \033[1;32m\"\033[1;36m${SHADOW}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m" 
+   fi
+######################################
+######################################
+######################################
+fi # Fim se usuario existe em /etc/passwd
+######################################
+######################################
+######################################
+chmod 755 ${RC_POSTGRESQL}
+if [ $? -eq 0 ]; then
+ echo -e "\n\033[1;35mPermissão do arquivo \033[1;32m\"\033[1;36m${RC_POSTGRESQL}\033[1;32m\" \033[1;35malterada com sucesso\033[1;32m!\033[0m"
+ 
+ sed -i '35s/PG_VERSION.*/PG_VERSION=${PG_VERSION:-'${POSTGRESQL}'}/g;' ${RC_POSTGRESQL}
+  if [ $? -eq 0 ]; then
+   echo -e "\033[1;35mVersão correta do postgresql alterada para \033[1;32m\"\033[1;36m${POSTGRESQL}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m\n"
+    fi
+fi
+######################################
+######################################
+######################################
+mkdir -p ${LIBPGSQL}
+if [ $? -eq 0 ]; then
+ echo -e "\n\033[1;35mDiretório \033[1;32m\"\033[1;36m${LIBPGSQL##*/}\033[1;32m\" \033[1;35mcriado em \033[1;32m\"\033[1;36m${VARLIB}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m\n"
+ 
+ chown -R ${POSTGRES}.${POSTGRES} ${LIBPGSQL}
+  if [ $? -eq 0 ]; then
+   echo -e "\n\033[1;35mAlterado o dono de \033[1;32m\"\033[1;36m${LIBPGSQL}\033[1;32m\" \033[1;35mde \033[1;36m${USER}\033[1;32m:\033[1;36m${USER} \033[1;35mpara \033[1;36m${POSTGRES}\033[1;32m:\033[1;36m${POSTGRES} \033[1;35mcom sucesso\033[1;32m!\033[0m"
+    fi
+fi
+######################################
+######################################
+######################################
+mkdir -p ${LOGPGSQL}
+if [ $? -eq 0 ]; then
+ echo -e "\n\033[1;35mDiretório \033[1;32m\"\033[1;36m${LOGPGSQL##*/}\033[1;32m\" \033[1;35mcriado em \033[1;32m\"\033[1;36m${VARLOG}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m\n"
+ 
+ chown -R ${POSTGRES}.${POSTGRES} ${LOGPGSQL}
+  if [ $? -eq 0 ]; then
+   echo -e "\n\033[1;35mAlterado o dono de \033[1;32m\"\033[1;36m${LOGPGSQL}\033[1;32m\" \033[1;35mde \033[1;36m${USER}\033[1;32m:\033[1;36m${USER} \033[1;35mpara \033[1;36m${POSTGRES}\033[1;32m:\033[1;36m${POSTGRES} \033[1;35mcom sucesso\033[1;32m!\033[0m"
+    fi
+ 
+ sed -i '38s/LOGFILE.*/LOGFILE=\/var\/log\/pgsql\/postgresql-$PG_VERSION/g;' ${RC_POSTGRESQL}
+  if [ $? -eq 0 ]; then
+   echo -e "\n\033[1;35mDiretório de log default alterado para \033[1;32m\"\033[1;36m${LOGPGSQL}\033[1;32m\" \033[1;35mcom sucesso\033[1;32m!\033[0m\n"
+    fi
+fi
+######################################
+######################################
+######################################  
+su ${POSTGRES} -c "/usr/bin/initdb -D ${TABLESPACE}"
+if [ $? -eq 0 ]; then
+ echo -e "\033[1;35mTablespace \033[1;32m\"\033[1;36m${TABLESPACE}\033[1;32m\" \033[1;35mdo usuário \033[1;32m\"\033[1;36m${POSTGRES}\033[1;32m\" \033[1;35minicializado com sucesso\033[1;32m!\033[0m\n"
+  
+ su - ${POSTGRES} -c "/usr/bin/pg_ctl -D ${TABLESPACE} -l logfile start"
+ if [ $? -eq 0 ]; then
+  echo -e "\033[1;35mServidor de banco de dados em \033[1;32m\"\033[1;36m${TABLESPACE}\033[1;32m\" \033[1;35minicializado com sucesso\033[1;32m!\033[0m\n"
+   fi
+fi
+######################################
+######################################
+######################################
+fi # Fim check root rc.postgresql

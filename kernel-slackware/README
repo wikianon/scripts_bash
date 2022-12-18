@@ -1,0 +1,32 @@
+:<<COMMENT
+${MKINITRD} -c -k ${KVERSION} -f ${SYSARQ} -r ${DEVDISK} -m ${MKINITRDSTRINGS} -u -o ${INITRDZRAM}
+
+ln -s ${INITRDZRAM} ${ZRAMINITRD}
+
+read -p "Deseja adicionar d(epois) ou no f(im) de lilo.conf? " resposta
+
+case ${resposta} in
+  d|D)
+## Adiciona partição depois de "# End LILO global section" no lilo.conf
+sed -i '/# End LILO global section/a # Linux bootable generic partition config begins' ${LILO}
+sed -i '/# Linux bootable generic partition config begins/a image  = '${GENERIC}'' ${LILO}
+sed -i '/^image  = \/boot\/'${GENERIC#/boot/}'/a initrd = '${ZRAMINITRD}'' ${LILO}
+sed -i '/^initrd = \/boot\/'${ZRAMINITRD#/boot/}'/a root   = '${DEVDISK}'' ${LILO}
+sed -i '/^root   = \/dev\/'${PART}'/a label  = GNRCLNX' ${LILO}
+sed -i '/^label  = GNRCLNX/a read-only' ${LILO}
+sed -i '/^read-only/a # Linux bootable generic partition config ends' ${LILO}
+    ;;
+      
+  f|F)
+## Adiciona partição no fim de lilo.conf
+echo "# Linux bootable generic partition config begins
+image  = ${GENERIC}
+initrd = ${ZRAMINITRD}
+root   = ${DEVDISK}
+label  = GNRCLNX
+read-only
+# Linux bootable generic partition config ends
+     " >> ${LILO}
+    ;;
+esac
+COMMENT

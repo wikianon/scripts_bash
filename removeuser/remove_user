@@ -1,0 +1,122 @@
+#!/bin/sh
+##[Ficha: ]#######################################[Descricao: ]##############################################################
+#                                               #                                                                           #
+# [-] Autor..........: Jean Zonta               # [-] Script que remove usuarios com configurações especificas.             #
+# [-] Pseudonym......: wiki.anon                #                                                                           #
+# [-] Os destination.: Linux family             ##[Notas: ]##################################################################
+# [-] Script Name....: remove_user              #                                                                           #
+# [-] Create day.....: Qua Jan 20 19:30:20 2019 # [-] Este script foi criado para remover usuarios criados pelo config_user #
+# [-] Last Update....: Qui Apr 09 16:00:00 2020 #                                                                           #
+# [-] License........: GNU/GPL V3+              #                                                                           #
+# [-] Script Version.: 0.0.1                    #                                                                           #
+#                                               #                                                                           #
+##[e-mail: ]#################################################################################################################
+#                                                                                                                           #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                                                #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@'                    #
+#                                                                                                                           #
+#############################################################################################################################
+GROUP=${GROUP:-/etc/group}
+SHADOW=${SHADOW:-/etc/shadow}
+PASSWD=${PASSWD:-/etc/passwd}
+SUDOERS=${SUDOERS:-/etc/sudoers}
+#userdel -r ${RMUSR} #remove o /home do usuario
+
+if [ ${UID} -ne 0 ]; then
+ echo -e "\n\033[1;31mYou must be root\033[1;32m!\033[0m\n"
+  else
+######################################
+######################################
+RMUSR="$1"
+
+while [ -z "${RMUSR}" ]; do
+ echo -ne "\n\033[1;36mEnter username to remove\033[1;32m: \033[0m"
+ read RMUSR
+
+  if [ -z "${RMUSR}" ]; then
+   echo -e "\n\033[1;31mEnter the username\033[1;32m!\033[0m\n"
+    fi
+done
+######################################
+######################################
+if [ -z "$(getent passwd ${RMUSR})" ]; then
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+ else
+  sed -i 's/'${RMUSR}.*'//g;/^$/d' ${PASSWD}
+  if [ -z "$(getent passwd ${RMUSR})" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+fi
+###################
+###################
+if [ -f "${PASSWD}-" -a ! -z "$(grep ${RMUSR} ${PASSWD}-)" ]; then
+ sed -i 's/'${RMUSR}.*'//g;/^$/d' ${PASSWD}-
+  if [ -z "$(grep "^${RMUSR}" ${PASSWD}-)" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+ else
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+fi
+######################################
+######################################
+if [ -z "$(getent shadow ${RMUSR})" ]; then
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+ else
+  sed -i 's/'${RMUSR}.*'//g;/^$/d' ${SHADOW}
+  if [ -z "$(getent shadow ${RMUSR})" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+fi
+###################
+###################
+if [ -f "${SHADOW}-" -a ! -z "$(grep ${RMUSR} ${SHADOW}-)" ]; then
+ sed -i 's/'${RMUSR}.*'//g;/^$/d' ${SHADOW}-
+  if [ -z "$(grep "^${RMUSR}" ${SHADOW}-)" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+ else
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+fi
+######################################
+######################################
+if [ -z "$(getent group ${RMUSR})" ]; then
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+ else
+  sed -i 's/,'${RMUSR}'//g;s/:'${RMUSR}'/:/g;s/'${RMUSR}':x.*//g;/^$/d' ${GROUP}
+  if [ -z "$(getent group ${RMUSR})" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+fi
+###################
+###################
+if [ -f "${GROUP}-" -a ! -z "$(grep ${RMUSR} ${GROUP}-)" ]; then
+ sed -i 's/,'${RMUSR}'//g;s/:'${RMUSR}'/:/g;s/'${RMUSR}':x.*//g;/^$/d' ${GROUP}-
+  if [ -z "$(grep "^${RMUSR}" ${GROUP}-)" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+ else
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+fi
+######################################
+######################################
+if ! [ -z "$(grep "^${RMUSR}" ${SUDOERS})" ]; then
+ sed -i "/${RMUSR}/ s/${RMUSR}.*//g;/^$/d" ${SUDOERS}
+  if [ -z "$(grep "^${RMUSR}" ${SUDOERS})" ]; then
+  echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mremoved sucessfully\033[1;32m!\033[0m\n"
+  fi
+ else
+ echo -e "\n\033[1;34mUser \033[1;32m\"\033[1;36m${RMUSR}\033[1;32m\" \033[1;34mnot exists\033[1;32m!\033[0m\n"
+fi
+######################################
+######################################
+
+if [[ $(lsattr /home/${RMUSR}/.config/user-dirs.dirs | awk '{print $1}') == "----i---------e-----" ]]; then 
+chattr -i /home/${RMUSR}/.config/user-dirs.dirs 2> /dev/null
+fi
+
+[ -d /home/${RMUSR} ] && rm -rf /home/${RMUSR} 2> /dev/null
+
+[ -f /var/spool/mail/${RMUSR} ] && rm -rf /var/spool/mail/${RMUSR} 2> /dev/null
+######################################
+######################################
+fi # Fim root

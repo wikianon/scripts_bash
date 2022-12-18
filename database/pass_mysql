@@ -1,0 +1,49 @@
+#!/bin/sh
+##[Ficha: ]#######################################[Descricao: ]##############################################################
+#                                               #                                                                           #
+# [-] Autor..........: Jean Zonta               # [-] Script que configura banco de dados mysql.                            #
+# [-] Pseudonym......: wiki.anon                #                                                                           #
+# [-] Os destination.: Linux Gnu Slackware      ##[Notas: ]##################################################################
+# [-] Script Name....: pass_mysql               #                                                                           #
+# [-] Create day.....: Seg Jan 16 15:40:00 2017 # [-] Este script foi criado para configurar senha do usuario root mysql.   #
+# [-] Last Update....: Sex Apr 03 11:53:10 2020 #                                                                           #
+# [-] License........: GNU/GPL V3+              #                                                                           #
+# [-] Script Version.: 0.0.2                    #                                                                           #
+#                                               #                                                                           #
+##[e-mail: ]#################################################################################################################
+#                                                                                                                           #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                                                #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@'                    #
+#                                                                                                                           #
+#############################################################################################################################
+USERFRM=${USERFRM:-/var/lib/mysql/mysql/user.frm}
+
+if [ "$(whoami)" != "root" ]; then
+ echo -e "\n\t\e[1;31mMake sudo to run $0\033[1;32m!\033[0m\n"
+  else
+read -sp "$(echo -ne "\e[1;37mEnter password user mysql\033[1;32m:\033[0m ")" MYPASS
+
+#service mysqld start
+ sed -i '/definer_user=/s/definer_user=.*/definer_user=root/g;/definer_host=/s/definer_host=.*/definer_host=localhost,127.0.0.1,::1,%/g;' ${USERFRM}
+  if [ $? -eq 0 ]; then
+    mysql -u root -e "update global_priv set priv=json_set(priv, '$.plugin', 'mysql_native_password','$.authentication_string', password('${MYPASS}')) where User='root';
+                      delete from global_priv where User='';
+                      delete from db where Db='test' or Db='test\\_%';
+                      grant all on *.* to 'root'@'localhost' identified by '${MYPASS}';
+                      grant all on *.* to 'root'@'127.0.0.1' identified by '${MYPASS}';
+                      grant all on *.* to 'root'@'::1' identified by '${MYPASS}';
+                      grant all on *.* to 'root'@'%' identified by '${MYPASS}';
+                      grant all privileges on *.* to 'root'@'localhost';
+                      grant all privileges on *.* to 'root'@'127.0.0.1';
+                      grant all privileges on *.* to 'root'@'::1';
+                      grant all privileges on *.* to 'root'@'%';
+                      delete from global_priv where User='root' and Host not in ('localhost', '127.0.0.1', '::1', '%');
+                      flush privileges;
+                      select *from global_priv;" mysql
+  fi
+
+#mysql -u root -p --database mysql < mysql_updates.sql
+
+echo -e "\e[1;31mIniciando MariaDB novamente\033[1;32m!\033[0m\n"
+ service mysqld restart
+fi

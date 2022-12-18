@@ -1,0 +1,135 @@
+#!/bin/sh
+##[Ficha: ]###############################################################################################
+#                                                                                                        #
+# [-] Autor..........: Jean Zonta                                                                        #
+# [-] Pseudonym......: wiki.anon                                                                         #
+# [-] Os destination.: Slackware family                                                                  #
+# [-] Script Name....: removekpkg                                                                        #
+# [-] Create day.....: Dom Mar 29 15:30:00 2020                                                          #
+# [-] Last Update....: Qui Apr 02 13:35:20 2020                                                          #
+# [-] License........: GNU/GPL V3+                                                                       #
+# [-] Script Version.: 0.0.2                                                                             #
+#                                                                                                        #
+##[e-mail: ]##############################################################################################
+#                                                                                                        #
+# [-] echo "ykmk0cpqpB{cjqq0eqo0dt" | perl -pe \ 's/(.)/chr(ord($1)-2*1)/ge'                             #
+# [-] echo 'comhttps://slackwarewww' | sed 's@\(com\)\(https://\)\(slackware\)\(www\)@\2\4.\3.\1 ..!!!@' #
+#                                                                                                        #
+##########################################################################################################
+LILO=${LILO:-/etc/lilo.conf}
+SLILO=${SLILO:-$(which lilo)}
+
+version="$1" # 4.19.42
+package="$2" # -source or --source, -modules or --modules, -huge or --huge, -generic or --generic
+lilo="$3"    # -lilo or --lilo or -rlilo or --rlilo
+
+# Linux 5.4.18 bootable huge partition config begins
+#image  = /boot/vmlinuz_huge-5.4.18
+#root   = /dev/sda1
+#label  = HUGE-5.4.18
+#read-only
+# Linux 5.4.18 bootable huge partition config ends
+#The functions remove configs in lilo.
+function comment_lilo_huge()
+{
+ sed -i "/${version} bootable huge partition config begins/,+4 s/^/#/g;s/##/#/g;" ${LILO}
+  if [ $? -eq 0 ]; then
+   ${SLILO}
+    fi
+}
+
+function remove_lilo_huge()
+{
+ sed -i "/${version} bootable huge partition config begins/,+5 s/^.*//g;/^$/d;" ${LILO}
+ if [ $? -eq 0 ]; then
+  if [ -z "$(egrep "vmlinuz_huge-${version}" ${LILO})" ]; then
+  ${SLILO}
+  fi
+ fi
+}
+
+# Linux 5.4.18 bootable generic partition config begins
+#image  = /boot/vmlinuz_generic-5.4.18
+#initrd = /boot/initrd_generic-5.4.18
+#root   = /dev/sda1
+#label  = GNRC-5.4.18
+#read-only
+# Linux 5.4.18 bootable generic partition config ends
+function comment_lilo_generic()
+{
+ sed -i "/${version} bootable generic partition config begins/,+5 s/^/#/g;s/##/#/g;" ${LILO}
+  if [ $? -eq 0 ]; then
+   ${SLILO}
+    fi
+}
+
+function remove_lilo_gneric()
+{
+ sed -i "/${version} bootable generic partition config begins/,+6 s/^.*//g;/^$/d;" ${LILO}
+  if [ -z "$(egrep "vmlinuz_generic-${version}" ${LILO})" ]; then
+   ${SLILO}
+    fi
+}
+
+HBOOT=($(ls -o /boot/*huge*${version}*  2> /dev/null | awk '{print $8}'))
+GBOOT=($(ls -o /boot/*generic*${version}*  2> /dev/null | awk '{print $8}'))
+HUGE="$(ls -1 /var/log/packages/kernel-huge-${version}* 2> /dev/null)"
+SOURCE="$(ls -1 /var/log/packages/kernel-source-${version}* 2> /dev/null)"
+GENERIC="$(ls -1 /var/log/packages/kernel-generic-${version}* 2> /dev/null)"
+MODULES="$(ls -1 /var/log/packages/kernel-modules-${version}* 2> /dev/null)"
+
+if [ ! -z "${version}" -a ! -z "${package}" -a -z "${lilo}" ]; then
+
+ if [ "${version}" = "$(uname -r)" ]; then
+  echo -e "\n\033[1;31mKernel \033[1;34m${version} \033[1;31mis running\033[1;32m!\033[0m\n"
+ elif [ "${package}" = "-source" -o "${package}" = "--source" ]; then
+  removepkg ${SOURCE##*/}
+ elif [ "${package}" = "-modules" -o "${package}" = "--modules" ]; then
+  removepkg ${MODULES##*/}
+ fi
+
+elif [ ! -z "${version}" -a ! -z "${package}" -a ! -z "${lilo}" ]; then
+
+ if [ "${version}" = "$(uname -r)" ]; then
+  echo -e "\n\033[1;31mKernel \033[1;34m${version} \033[1;31mis running\033[1;32m!\033[0m\n"
+ elif [ "${package}" = "-huge" -a "${lilo}" = "-lilo" ]; then
+  removepkg ${HUGE##*/}
+   rm -v ${HBOOT[@]}
+    comment_lilo_huge
+ elif [ "${package}" = "--huge" -a "${lilo}" = "--lilo" ]; then
+  removepkg ${HUGE##*/}
+   rm -v ${HBOOT[@]}
+    remove_lilo_huge
+ elif [ "${package}" = "-generic" -a "${lilo}" = "-lilo" ]; then
+  removepkg ${GENERIC##*/}
+   rm -v ${GBOOT[@]}
+    comment_lilo_generic
+ elif [ "${package}" = "--generic" -a "${lilo}" = "--lilo" ]; then
+  removepkg ${GENERIC##*/}
+   rm -v ${GBOOT[@]}
+    remove_lilo_gneric
+ fi
+
+elif [ -z "${version}" -o -z "${package}" -o -z "${lilo}" -o "${version}" = "-h" -o "${version}" = "--h" -o "${version}" = "-help" -o "${version}" = "--help" ]; then
+echo -e "\n\033[1;32m${0} \033[1;31mrequire min \033[1;34m2 \033[1;31mor \033[1;34m3 \033[1;31marguments\033[1;32m!"
+echo -e "\n\033[1;34mChoices options\033[1;32m:"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m-source"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m-modules"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m--source"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m--modules"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m-huge     \033[1;31mand \033[1;35m-lilo"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m-generic  \033[1;31mand \033[1;35m-lilo"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m--huge    \033[1;31mand \033[1;35m--lilo"
+echo -e "\033[1;32m${0} \033[1;31m$(uname -r) \033[1;35m--generic \033[1;31mand \033[1;35m--lilo"
+echo -e "\n\033[1;34mInfo options\033[1;32m:"
+echo -e "\033[1;32m-huge    \033[1;31mremove \033[1;35mkernel-huge-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m-source  \033[1;31mremove \033[1;35mkernel-source-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m-generic \033[1;31mremove \033[1;35mkernel-generic-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m-modules \033[1;31mremove \033[1;35mkernel-modules-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m-lilo    \033[1;31mcoment \033[1;35mand updates configs\033[1;32m.\n"
+echo -e "\033[1;32m--huge    \033[1;31mremove \033[1;35mkernel-huge-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m--source  \033[1;31mremove \033[1;35mkernel-source-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m--generic \033[1;31mremove \033[1;35mkernel-generic-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m--modules \033[1;31mremove \033[1;35mkernel-modules-$(uname -r)\033[1;32m."
+echo -e "\033[1;32m--lilo    \033[1;31mremove \033[1;35mand update configs\033[1;32m.\033[0m\n"
+fi

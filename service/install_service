@@ -1,0 +1,20 @@
+#!/bin/sh
+rm -rf /{s,}bin/service
+rm -rf /usr/{s,}bin/service
+
+#Copie para o diretório /bin.
+#cp serviceOK_default-v03 /bin/service
+#chmod -v 755 /bin/service
+#
+# Copie para o diretório /usr/bin
+cat ${PWD}/service/serviceOK_default-v03 > /usr/bin/service
+chmod -v 755 /usr/bin/service
+#
+#Copie para o diretório /sbin
+#cp serviceOK_default-v03 /sbin/service
+#chmod -v 755 /sbin/service
+#
+#Copie para o diretório /usr/sbin
+#cp serviceOK_default-v03 /usr/sbin/service
+#chmod -v 755 /usr/sbin/service 
+#
