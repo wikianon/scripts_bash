@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/bash
 ##[Ficha: ]###############################################################################################
 #                                                                                                        #
 # [-] Autor..........: Jean Zonta                                                                        #
@@ -160,7 +160,7 @@ installgeneric=$(echo ${installgeneric} | tr A-Z a-z) #lowercase
 case "${installgeneric}" in
 'a')
   if [ -z "${GENERIC_LABEL}" -a -f "${VM_GENERIC_LNK}" ]; then
-   ## Adiciona partição após "# End LILO global section" no lilo.conf
+   ## Adiciona partiÃ§Ã£o apÃ³s "# End LILO global section" no lilo.conf
    sed -i "${LINE}s/$/\n# Linux ${INSTVERSION} bootable generic partition config begins/g;
            ${LINE}s/$/\nimage  = ${VM_GENERIC_LNK//\//\\/}/g;
            ${LINE}s/$/\ninitrd = ${INITRD_GENERIC_LNK//\//\\/}/g;
@@ -179,7 +179,7 @@ case "${installgeneric}" in
 
 'e')
   if [ -z "${GENERIC_LABEL}" -a -f "${VM_GENERIC_LNK}" ]; then
-  ## Adiciona partição no fim de lilo.conf
+  ## Adiciona partiÃ§Ã£o no fim de lilo.conf
 echo "# Linux ${INSTVERSION} bootable generic partition config begins
 image  = ${VM_GENERIC_LNK}
 initrd = ${INITRD_GENERIC_LNK}
@@ -261,7 +261,7 @@ installhuge=$(echo ${installhuge} | tr A-Z a-z) #lowercase
 case "${installhuge}" in
 'a')
   if [ -z "${HUGE_LABEL}" -a -f "${VM_HUGE_LNK}" ]; then
-   ## Adiciona partição após "# End LILO global section" no lilo.conf
+   ## Adiciona partiÃ§Ã£o apÃ³s "# End LILO global section" no lilo.conf
    sed -i "${LINE}s/$/\n# Linux ${INSTVERSION} bootable huge partition config begins/g;
            ${LINE}s/$/\nimage  = ${VM_HUGE_LNK//\//\\/}/g;
            ${LINE}s/$/\nroot   = ${DEVDISK//\//\\/}/g;
@@ -279,7 +279,7 @@ case "${installhuge}" in
 
 'e')
   if [ -z "${HUGE_LABEL}" -a -f "${VM_HUGE_LNK}" ]; then
-  ## Adiciona partição no fim de lilo.conf
+  ## Adiciona partiÃ§Ã£o no fim de lilo.conf
 echo "# Linux ${INSTVERSION} bootable huge partition config begins
 image  = ${VM_HUGE_LNK}
 root   = ${DEVDISK}
