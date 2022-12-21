@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#ALTERTIME=sex_16_mar_2018_21:25:17
+ALTERTIME=${ALTERTIME:-$(date "+%a_%d_%b_%Y_%H:%M:%S")}
+
+INITMAKE=${INITMAKE:-~/Workspace/GitHub/shell-script/editmake/initmake}
+
+MAKE=${MAKE:-$(find {Aggregation/*,Composition/*,Cadastros/*,DataStructure/*,libmenu/*,Overload/*,Override/*,Polymorphism/*,Regex/*,StringSet/*,TermPaper/*} -name "Makefile")}
+
+cd ~/Workspace/GitHub/standard-cxx
+
+${MAKE} > locates
+
+LOCATES=${LOCATES:-$(find . -name "locates")}
+
+QTD=${QTD:-$(cat ${LOCATES} | wc -l)}
+
+NAMES=($(awk -F'-' '{printf "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s",$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70}' ${LOCATES}))
+
+echo ""
+for ((l = 0; l < ${QTD}; l++))
+do
+  
+  EDIT=${EDIT:-$(echo ${NAMES[${l}]} | sed 's/M/m/g;')}
+  
+  echo -e "\e[37;1mFile \e[31;1m${l}\e[m: \e[35;1m${NAMES[${l}]} \e[37;1mRenamed\e[m: ${EDIT[0]}\e[m"
+  
+  mv ${NAMES[${l}]} ${EDIT[0]}
+  
+  cat ${INITMAKE} > ${NAMES[${l}]}
+  
+  cat ${EDIT[0]} >> ${NAMES[${l}]}
+  
+  rm -rf ${EDIT[0]}
+  
+  sed -i '/DateTime/ s/:.*/':\ ${ALTERTIME}'/g;/DateTime/ s/_/ /g;' ${NAMES[${l}]}
+  
+  if [ $? -ne 0 ]; then
+   echo -e "\e[37;1m\n\t${NAMES[${l}]} \e[m<-\e[31;1m nothing done.!!\e[m\n\n"
+  else
+   echo -e "\e[37;1mFile \e[31;1m${l}\e[m: \e[36;1m${NAMES[${l}]}\e[31;1m edited successfully.!!!\n\n\e[m"
+  fi
+  
+  rm -rf ${LOCATES}
+  
+done #fim primeiro for
