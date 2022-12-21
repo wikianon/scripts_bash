@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# home do usuario
+HOMEUSER=${HOMEUSER:-${HOME}/Downloads}
+
+# pega o numero de nucleos do processador
+NUCLEOS=${NUCLEOS:-$(grep "model name" /proc/cpuinfo | wc -l)}
+
+CORE=${CORE:-$((${NUCLEOS}+1))}
+
+# SVERSION pega o nome da ultima pasta gcc-*.*.*  dentro da pasta releases
+SVERSION=${SVERSION:-$(lynx --dump ftp://gcc.gnu.org/pub/gcc/releases/|sed -n '$p'|awk -F"/" '{print $NF}')}
+
+# VERSION pega a versao do gcc na variavel SVERSION
+VERSION=${VERSION:-$(echo ${SVERSION} | cut -f2 -d -)}
+
+# PKGVERSION pega o nome do ultimo pacote gcc-*.*.*.tar.bz2 dentro da pasta gcc-*.*.*  
+PKGVERSION=${PKGVERSION:-$(lynx --dump ftp://gcc.gnu.org/pub/gcc/releases/|sed -n '$p'| awk -F"/" '{print $NF".tar.gz"}')}
+
+LINK=${LINK:-"ftp://gcc.gnu.org/pub/gcc/releases/${SVERSION}/${PKGVERSION}"}
+
+wget -P ${HOMEUSER} -c ${LINK}
+
+tar -xvjf ${HOMEUSER}/${PKGVERSION}
+cd ${HOMEUSER}/${SVERSION}
+
+./contrib/download_prerequisites
+ mkdir build && cd build
+../configure --prefix=/usr \
+  --with-gxx-include-dir=/usr/include/c++/$VERSION \
+  --enable-linker-build-id \
+  --without-included-gettext \
+  --libdir=/usr/lib64 \
+  --enable-nls \
+  --verbose \
+  --enable-objc-gc \
+  --enable-clocale=gnu \
+  --enable-gnu-unique-object \
+  --enable-plugin \
+  --enable-libstdcxx-debug \
+  --enable-threads=posix \
+  --enable-zlib \
+  --with-gnu-ld \
+  --mandir=/usr/man \
+  --infodir=/usr/info \
+  --with-system-zlib \
+  --enable-__cxa_atexit \
+  --enable-libstdcxx-dual-abi \
+  --disable-libunwind-exceptions \
+  --disable-install-libiberty \
+  --with-default-libstdcxx-abi=gcc4-compatible \
+  --enable-languages=ada,brig,c,c++,fortran,go,lto,objc,obj-c++,java \
+  --with-tune=native \
+  --enable-lto \
+  --disable-gtktest \
+  --disable-multilib \
+  --enable-shared \
+  --enable-bootstrap \
+  --enable-vtable-verify \
+  --enable-libssp \
+  --enable-libvtv \
+  --enable-libcilkrts \
+  --enable-intermodule \
+  --enable-checking=release \
+  --enable-coverage \
+  --enable-libatomic \
+  --enable-libgomp \
+  --enable-gdb \
+  --enable-gdb-stub \
+  --enable-disasm \
+  --enable-debugger \
+  --enable-new-pit \
+  --enable-all-optimizations \
+  --with-all-libs --with-x --with-x11 --with-nogui \
+  --enable-libjava \
+  --enable-static-libjava \
+  --enable-static-nss \
+  --with-arch-directory=x86_64 \
+  --target=x86_64-slackware-linux \
+  --build=x86_64-slackware-linux \
+  --host=x86_64-slackware-linux \
+  --with-java-home=/usr/lib64/jvm/jre \
+  --with-jvm-root-dir=/usr/lib64/jvm \
+  --with-jvm-jar-dir=/usr/lib64/jvm/jvm-exports \
+  --enable-java-awt=gtk --enable-gtk-cairo \
+  --with-ecj-jar=/usr/share/java/eclipse-ecj.jar \
+  --with-bugurl="https://gcc.gnu.org/bugzilla/" \
+  --enable-libstdcxx-time=yes \
+  --enable-checking=yes
+
+  make -j${CORE}
+  make -k check
+  sudo make install
+ 
+ echo -e "\n\tGCC installed..."
+ gcc --version

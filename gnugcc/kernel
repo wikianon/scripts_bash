@@ -1,0 +1,97 @@
+#!/bin/sh
+
+ARCHFIRM=${ARCHFIRM:-$(echo a/kernel-firmware-* | cut -f4 -d -)}
+
+FIRMWARE=${FIRMWARE:-$(echo a/kernel-firmware-* | cut -f3 -d -)}
+
+ARCHKERNEL=${ARCHKERNEL:-$(echo a/kernel-generic-* | cut -f4 -d -)}
+
+VERSION=${VERSION:-$(echo a/kernel-generic-* | cut -f3 -d -)}
+
+SKERNEL=${SKERNEL:-$(echo k/kernel-source-* | cut -f2 -d -)}
+
+ISSUE=${ISSUE:-/etc/issue}
+LILO=${LILO:-/etc/lilo.conf}
+SUDOERS=${SUDOERS:-/etc/sudoers}
+SLVERSION=${SLVERSION:-/etc/slackware-version}
+MODULESLOCAL=${MODULESLOCAL:-/etc/rc.d/rc.modules.local}
+
+groupadd sudo
+groupadd tar
+
+rm -rf /etc/inittab
+rm -rf /etc/rc.d/rc.{4,M,S}
+rm -rf /etc/profile.d/lang.{csh,sh}
+
+cp {inittab,sysctl.conf} /etc
+cp lang.{csh,sh} /etc/profile.d/
+cp rc.{4,M,S,zram} /etc/rc.d
+
+
+sed -i 's/^#compact/compact/g;
+        s/^timeout =.*/timeout = 50/g;
+        s/^  label =.*/  label = SLCKWRLNX/g;
+       ' ${LILO}
+       
+sed -i '/root/ s/ALL=(/ALL=(ALL:/g;' ${SUDOERS}
+sed -i '/%sudo/ s/^#//g;/%sudo/ s/^ //g;/%sudo/ s/ALL=(/ALL=(ALL:/g;' ${SUDOERS}
+
+if [ -f ${MODULESLOCAL} ]; then
+ echo "/sbin/modprobe zram" >> ${MODULESLOCAL}
+fi
+
+chmod 755 -v /etc/rc.d/rc.zram
+   #. /etc/rc.d/rc.zram start
+   #. /etc/rc.d/rc.mysqld start
+   #. /etc/rc.d/rc.networkmanager start
+   
+if [ -f ${SLVERSION} ]; then
+VER=${VER:-$(cat ${SLVERSION})}
+
+echo "Welcome to ${VER} \s-\r.\m \l" > ${ISSUE}
+
+fi
+
+upgradepkg --install-new --reinstall d/cmake-3.9.1-x86_64-1.txz
+upgradepkg --install-new --reinstall d/cscope-15.8b-x86_64-2.txz
+upgradepkg --install-new --reinstall d/cvs-1.11.23-x86_64-2.txz
+upgradepkg --install-new --reinstall d/Cython-0.24.1-x86_64-1.txz
+upgradepkg --install-new --reinstall d/flex-2.6.4-x86_64-1.txz
+upgradepkg --install-new --reinstall d/gcc-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gcc-brig-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gcc-g++-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gcc-gfortran-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gcc-gnat-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gcc-go-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gcc-objc-7.1.0-x86_64-3.txz
+upgradepkg --install-new --reinstall d/gdb-8.0-x86_64-1.txz
+upgradepkg --install-new --reinstall d/git-2.14.1-x86_64-1.txz
+upgradepkg --install-new --reinstall d/gnu-cobol-1.1-x86_64-2.txz
+upgradepkg --install-new --reinstall d/gperf-3.1-x86_64-1.txz
+upgradepkg --install-new --reinstall d/llvm-4.0.1-x86_64-2.txz
+upgradepkg --install-new --reinstall d/nasm-2.13.01-x86_64-1.txz
+upgradepkg --install-new --reinstall d/p2c-1.21alpha2-x86_64-3.txz
+upgradepkg --install-new --reinstall d/perl-5.24.0-x86_64-1.txz
+upgradepkg --install-new --reinstall d/pmake-1.111-x86_64-3.txz
+upgradepkg --install-new --reinstall d/ruby-2.4.1-x86_64-1.txz
+upgradepkg --install-new --reinstall d/python-2.7.13-x86_64-1.txz
+upgradepkg --install-new --reinstall d/wxPython-2.8.12.1-x86_64-5_slonly.txz
+installpkg --install-new d/python3-3.5.1-x86_64-1_slack.txz
+installpkg --install-new d/python3-3.6.0-x86_64-3_SBo.tgz
+installpkg --install-new d/python-django-tagging-0.4.3-x86_64-1_slonly.txz
+installpkg --install-new d/python-django-1.10-x86_64-1_slonly.txz
+upgradepkg --install-new --reinstall a/kernel-firmware-${FIRMWARE}-${ARCHFIRM}-1.txz
+upgradepkg --install-new --reinstall a/kernel-generic-${VERSION}-${ARCHKERNEL}-1.txz
+upgradepkg --install-new --reinstall a/kernel-headers-${VERSION}-${ARCHKERNEL}-1.txz
+upgradepkg --install-new --reinstall a/kernel-huge-${VERSION}-${ARCHKERNEL}-1.txz
+upgradepkg --install-new --reinstall a/kernel-modules-${VERSION}-${ARCHKERNEL}-1.txz
+upgradepkg --install-new --reinstall k/kernel-source-${VERSION}-${SKERNEL}-1.txz
+
+
+read -p "Crie um usuario: " usuario
+
+mkdir -p /home/${usuario}/{Documentos,Downloads,Imagens,Musicas,Videos,Filmes,Packages,Projetos,Workspace}
+
+chown -R ${usuario}.${usuario} /home/${usuario}
+
+usermod -aG sudo,tar ${usuario}
