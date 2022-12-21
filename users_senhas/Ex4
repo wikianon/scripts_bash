@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#https://www.vivaolinux.com.br/topico/Shell-Script/Script-para-criar-usuarios-1 
+senha="oc2011"
+nome="usuario"
+grupo="olimpiada"
+
+for ((i=3; i<=200; i++)) do
+useradd -m -d /home/$nome$i -p $(openssl passwd -1 $senha) -s /bin/bash -g $grupo $nome$i
+chown -R $nome$i /home/$nome$i
+echo "Usuario $nome$i criado"
+
+# força que a senha seja trocada no primeiro login
+chage -d 0 $nome$i
+
+done
+
+
+#Cria o usuario1 ao usuario200 com senha oc2011 padrao... :P

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#https://www.vivaolinux.com.br/topico/Shell-Script/script-para-criar-varios-usuarios
+#http://www.dicas-l.com.br/arquivo/script_para_adicionar_usuarios_em_massa_no_linux.php
+
+#O arquivo /tmp/nome_contas terá o seguinte conteúdo:
+
+#  usuario1:senha1
+#  usuario2:senha2
+#  usuario3:senha3
+#  usuario4:senha4
+
+
+if [ $UID != 0 ]
+then
+echo -e "\n\tYou must be root!\n"
+exit
+
+else
+
+LISTA_USUARIOS=/tmp/nome_contas
+
+login=$( ${login[@]} cat $LISTA_USUARIOS | cut -d ':' -f 2 )
+
+IFS=${OLD_IFS}
+
+touch usuariosXsenhas.txt
+
+for i in $(seq 0 $((${#login[@]} - 1 ))); 
+do 
+{
+
+pass=$(tr -dc A-Z0-9a-z/%\#*1_ < /dev/urandom | head -c 10) #gera senhas de até 10 caracteres
+
+$(groupadd ${login[i]})
+
+echo $(useradd -c "${login[i]}" -d /home/${login[i]} -m -g ${login[i]} -s /bin/bash ${login[i]})
+echo -e "$i - USUARIO: ${login[i]}\t LOGIN: ${login[i]}\t SENHA: ${pass}\n" >> usuariosXsenhas.txt
+echo "${login[i]}:${pass}" | chpasswd -m
+chage -d 0 ${login[i]}
+}done
+
+exit 
+
+fi

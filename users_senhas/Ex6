@@ -1,0 +1,53 @@
+#!/bin/sh
+############################################################################
+#A senha passada tem que já está criptografada, por isso está dando erro.
+#Se ainda quiser um script que crie vários usuário de uma vez só:
+#Para usar esse script, basta criar um arquivo com todos os 
+#nomes de usuários e senhas separando-os por ":" (dois pontos).
+#
+#exemplo:
+#
+#bash$ cat ~/usuarios_senhas_ftp.txt
+#usuario1:senha1
+#usuario2:senha2
+#usuario3:senha3
+#
+#Na hora de executar o script, basta passar o arquivo criado como parâmetro:
+#
+#./script.sh ~/usuarios_senhas_ftp.txt
+#Obs.: Para o script poder funcionar você terá que ter o openssl instalado. 
+##############################################################################
+
+## Remove os comentarios e as linhas em branco.
+LISTA=$(cat $1 | sed 's/^#//g'| sed "/^$/d" > user_senhas)
+
+## Lista com os usuarios e senhas.
+LISTA=$(pwd)/user_senhas
+
+## Quantidade total de linhas do arquivo de usuarios e senhas.
+LINHA_QTD_TOTAL=$(cat $LISTA | wc -l)
+## Primeira linha.
+LINHA=1
+
+## Loop para criar todos os usuarios do arquivo.
+while [ $LINHA -le $LINHA_QTD_TOTAL ] ; do
+   
+   USUARIO=$(sed -n "$LINHA"p $LISTA | cut -f1 -d":")
+   
+   SENHA=$(sed -n "$LINHA"p $LISTA | cut -f2 -d":")
+   
+   SENHACRIPT=$(openssl passwd -1 $SENHA)
+   
+   LINHA=$(expr $LINHA + 1)
+   
+   useradd -m $USUARIO -p $SENHACRIPT
+   
+   echo "Usuario: $USUARIO e Senha: $SENHACRIPT criada com sucesso..!!!" >> usuariofile$(date +%d).txt
+   #envia mensagem para email
+   echo "Usuario: $USUARIO e Senha: $SENHACRIPT criada com sucesso..!!!" | mail -s "Usuario e Senha" youremail@dominio.com.br
+   
+   #Envia anexo para email
+   mail -s "Usuario Criado" youremail@dominio.com.br < usuariofile$(date +%d).txt
+   
+done
+#rm -f $LISTA

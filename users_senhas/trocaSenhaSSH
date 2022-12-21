@@ -1,0 +1,42 @@
+#!/usr/bin/expect -f
+# Script simples e direto, 
+# pode ser usado para fazer a
+# troca em massa de senhas de
+# qualquer usuário ( como o root )
+# em estações remotas.
+# Salve o arquivo, dê permissão de execução:
+# chmod +x trocaSenhaSSH.sh
+# https://www.vivaolinux.com.br/script/Trocar-senha-de-usuario-via-SSH
+# Use-o:
+# ./trocaSenhaSSH.sh usuario@host_or_ip senha_antiga senha_nova
+#
+# Se quiseres usar em rotinas automatizadas
+# para várias estações com mesmo usuário e senha,
+# como o root, basta fazer um laço while ler
+# o nome ou IP das estações de um arquivo:
+#
+# while read ESTACAO
+# do
+#     ./trocaSenhaSSH.sh root@${ESTACAO} senha_antiga senha_nova
+# done < estacoes.txt
+#
+# tempo limite que o expect vai esperar por uma resposta:
+set timeout 30
+# configurando as variaveis:
+set xHost [lindex $argv 0]
+set senha_velha [lindex $argv 1]
+set senha_nova [lindex $argv 2]
+
+# enviando o comando ssh para o host
+spawn ssh $xHost
+
+# trocando a senha
+expect "*password:*" {
+   send "$senha_velha\r"
+   expect "*#*"
+    send "passwd\r"
+    expect "*password:*"
+    send "$senha_nova\r"
+    expect "*password:*"
+    send "$senha_nova\r"
+}

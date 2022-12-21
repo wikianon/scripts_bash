@@ -1,0 +1,39 @@
+#!/bin/sh
+
+#http://www.planetaunix.com.br/2014/09/comando-chpasswd-alterando-senhas-de.html
+
+# Verifica se é o root.  se nao for, termina a execução
+if [ $(id -u) -ne 0 ] ; then
+   echo "O script precisa ser executado como root"
+   exit
+
+else
+
+SSL_RAND_PASS=$(openssl rand -base64 10)
+
+RAND_SENHA=$(tr -dc A-Z0-9a-z/%\#*1_ < /dev/urandom | head -c 10) #gera senhas de até 10 caracteres
+
+LISTA_USUARIOS=/tmp/nome_contas #Arquivo com a lista de nomes
+
+for CONTA in $(sed 's/ .* /./g;s/ /./g;' ${LISTA_USUARIOS})
+do
+  #Verifica se a conta nao existe. Se existir, não cria novamente
+    if [ -z  $(cat /etc/passwd | grep "\b${CONTA}\b") ]; then
+
+        # cria a conta
+        useradd -m -d /home/$CONTA $CONTA
+
+        # define a senha para primeiro login
+        echo "$CONTA:$RAND_SENHA" | chpasswd -m
+
+        # força que a senha seja trocada no primeiro login
+        chage -d 0 $CONTA
+        
+        echo "$CONTA:$RAND_SENHA" >> RandSenhasEx2.txt
+        
+        #cat carta.txt | mail -s "Seja bem vindo" $usuario@dominio.ro.gov.br
+    fi
+
+done
+
+fi

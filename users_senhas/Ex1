@@ -1,0 +1,37 @@
+#!/bin/bash
+ 
+ 
+
+ 
+# Verifica se é o root.  se nao for, termina a execução
+if [ $(id -u) -ne 0 ]; then
+   echo "O script precisa ser executado como root"
+   exit
+  
+else
+
+SENHA="123456" #Senha padrao para todos os logins
+USUARIO=$(whoami)  # Verifica qual usuario que executou o script
+LISTA_USUARIOS=/tmp/nome_contas # Arquivo com a lista de nomes
+
+for CONTA in $(sed 's/ .* /./g;s/ /./g;' $LISTA_USUARIOS)
+do
+    #Verifica se a conta nao existe. Se existir, não cria novamente
+    if  [ -z  $(cat /etc/passwd | grep "\b$CONTA\b") ] ; then
+ 
+        # cria a conta
+        useradd -m -d /home/$CONTA $CONTA
+ 
+        # altera a senha
+        # Nem todas as versões do passwd possuem suporte ao parametro --stdin
+        #echo  $SENHA  | passwd --stdin $CONTA
+        echo "$CONTA:$SENHA" | chpasswd -m
+ 
+        # força que a senha seja trocada no primeiro login
+        chage -d 0 $CONTA
+        
+        echo "$CONTA:$SENHA" >> SenhasEX1.txt
+    fi
+done
+
+fi

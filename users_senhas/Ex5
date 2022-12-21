@@ -1,0 +1,40 @@
+#!/bin/sh
+############################################################################
+#Para usar esse script, basta criar um arquivo com todos os 
+#nomes de usuários e senhas separando-os por ":" (dois pontos).
+#
+#exemplo:
+#
+# cat ~/usuarios_senhas_ftp.txt
+#usuario1:senha1
+#usuario2:senha2
+#usuario3:senha3
+#
+#Na hora de executar o script, basta passar o arquivo criado como parâmetro:
+#
+#./script.sh ~/usuarios_senhas_ftp.txt
+#Obs.: Para o script poder funcionar você terá que ter o openssl instalado. 
+##############################################################################
+
+## Remove os comentarios e as linhas em branco.
+LISTA=$(cat $1 | sed 's/^#//g'| sed '/^$/d' > /tmp/list_$$.txt)
+## Lista com os usuarios e senhas.
+LISTA=/tmp/list_$$.txt
+## Quantidade total de linhas do arquivo de usuarios e senhas.
+LINHA_QTD_TOTAL=$(cat $LISTA | wc -l)
+## Primeira linha.
+LINHA=1
+
+## Loop para criar todos os usuarios do arquivo.
+while [ $LINHA -le $LINHA_QTD_TOTAL ] ; do
+   
+   USUARIO=$(sed -n "$LINHA"p $LISTA | cut -f1 -d":")
+   SENHA=$(sed -n "$LINHA"p $LISTA | cut -f2 -d":")
+   LINHA=$(expr $LINHA + 1)
+   mkdir /var/ftp/$USUARIO  
+   useradd -d /var/ftp/$USUARIO $USUARIO -p $(openssl passwd -1 $SENHA) -s /bin/false
+
+done
+rm -f $LISTA
+
+
